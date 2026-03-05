@@ -117,8 +117,73 @@ def add_expense(
     )
 
     if response.status_code == 200:
-        print(f"✅ Gasto '{expense}' agregado correctamente")
+        print(f"✅ Expense '{expense}' added")
         return response.json()
     else:
         print(f"✗ Error {response.status_code}: {response.text}")
         return None
+    
+def get_expense_id(expense_id: int) -> str:
+    """Search an expense by its ID and returns the expense page ID"""
+    url = f"https://api.notion.com/v1/databases/{notion_db_key}/query"
+    
+    payload = {
+        "filter": {
+            "property": "ID", 
+            "number": {
+                "equals": expense_id
+            }
+        }
+    }
+
+    response = requests.post(url, headers=headers, json=payload)
+    data = response.json()
+    
+    results = data.get("results", [])
+    if results:
+        return results[0]["id"]
+    else:
+        print(f"Expense with ID '{expense_id}' not found")
+        return None
+    
+def delete_expense(expense_id: int):
+    """Deletes an expense from the DB"""
+    expense_page_id = get_expense_id(expense_id)
+    url = f"https://api.notion.com/v1/pages/{expense_page_id}"
+    payload = {"archived": True}
+    
+    response = requests.patch(url, headers=headers, json=payload)
+    
+    if response.status_code == 200:
+        print("Expense deleted correctly")
+    else:
+        print(f"✗ Error {response.status_code}: {response.text}")
+
+def update_expense(
+        expense_id: str, 
+        new_expense: str = None, 
+        new_amount: float = None, 
+        new_category: str = None
+):
+    """Updates the expense properties from an existed page"""
+    expense_page_id = get_expense_id(expense_id)
+    url = f"https://api.notion.com/v1/pages/{expense_page_id}"
+    
+    properties = {}
+    
+    # Solo agregamos a las propiedades lo que el usuario quiere actualizar
+    if new_expense is not None:
+        properties["Expense"] = {"title": [{"text": {"content": new_expense}}]}
+    if new_amount is not None:
+        properties["Amount"] = {"number": new_amount}
+    if new_category is not None:
+        properties["Category"] = {"select": {"name": new_category}}
+        
+    payload = {"properties": properties}
+    
+    response = requests.patch(url, headers=headers, json=payload)
+    
+    if response.status_code == 200:
+        print("Expense updated correctly")
+    else:
+        print(f"✗ Error {response.status_code}: {response.text}")
