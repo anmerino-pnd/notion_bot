@@ -1,64 +1,13 @@
 import requests
 from datetime import date
-from typing import List, Literal
-from pydantic import BaseModel, Field
+from typing import Literal, Optional
+from ollama import chat
 from notion_bot.config.credentials import (
     notion_integration_token,
-    notion_page_token, 
     notion_db_key
 )
 
-Categories = Literal[
-    "Food, Dining & Snacks",
-    "Shopping",
-    "Groceries",
-    "Education",
-    "Health & Wellness",
-    "Transport",
-    "Travel & Lodging",
-    "Housing & Utilities"
-]
-
-class CreateExpense(BaseModel):
-    expense: str = Field(
-        description=""
-    )
-    amount: float = Field(
-        description=""
-    )
-    category: List[Categories] = Field(
-        description=""
-    )
-    expense_date = str = Field(
-        description=""
-    )
-
-
-def my_id_db(notion_integration_token: str) -> None:
-    headers = {
-    "Authorization": f"Bearer {notion_integration_token}",
-    "Content-Type": "application/json",
-    "Notion-Version": "2022-06-28"
-}
-
-    response = requests.post(
-        "https://api.notion.com/v1/search",
-        headers=headers,
-        json={
-            "filter": {
-                "property": "object",
-                "value": "database"
-            }
-        }
-    )
-
-    data = response.json()
-    for db in data.get("results", []):
-        print("Name:", db["title"][0]["text"]["content"])
-        print("ID:    ", db["id"])
-        print("---")
-
-CATEGORIES = [
+CategoryType = Literal[
     "Dining & Snacks",
     "Shopping",
     "Groceries",
@@ -76,33 +25,31 @@ headers = {
 }
 
 def add_expense(
-    expense: str,
-    amount: float,
-    category: str,
-    expense_date: str = None  # YYYY-MM-DD
-):
-    if category not in CATEGORIES:
-        print(f"⚠️ Wrong category. Please select: {CATEGORIES}")
-        return None
+    expense: str, 
+    amount: float, 
+    category: CategoryType, 
+    expense_date: str = None
+) -> str:
+    """
+    Adds a new expense to the Notion database.
 
+    Args:
+        expense: The name or short description of the expense (e.g., 'Coffee', 'Uber').
+        amount: The total cost or amount of the expense. Must be a number.
+        category: The category that best fits the expense.
+        expense_date: The date of the expense in YYYY-MM-DD format. If not provided, it will use today's date.
+    
+    Returns:
+        A success or error message.
+    """
     if expense_date is None:
         expense_date = str(date.today())
 
     properties = {
-        "Expense": {
-            "title": [
-                {"text": {"content": expense}}
-            ]
-        },
-        "Amount": {
-            "number": amount
-        },
-        "Category": {
-            "select": {"name": category}
-        },
-        "Date": {
-            "date": {"start": expense_date}
-        }
+        "Expense": {"title": [{"text": {"content": expense}}]},
+        "Amount": {"number": amount},
+        "Category": {"select": {"name": category}},
+        "Date": {"date": {"start": expense_date}}
     }
 
     payload = {
@@ -110,80 +57,80 @@ def add_expense(
         "properties": properties
     }
 
-    response = requests.post(
-        "https://api.notion.com/v1/pages",
-        headers=headers,
-        json=payload
-    )
+    response = requests.post("https://api.notion.com/v1/pages", headers=headers, json=payload)
 
     if response.status_code == 200:
-        print(f"✅ Expense '{expense}' added")
-        return response.json()
-    else:
-        print(f"✗ Error {response.status_code}: {response.text}")
-        return None
-    
+        return f"Success: Expense '{expense}' added."
+    return f"Error: {response.text}"
+
+
 def get_expense_id(expense_id: int) -> str:
-    """Search an expense by its ID and returns the expense page ID"""
+    """Helper function to find Notion's internal page ID based on our numeric ID."""
     url = f"https://api.notion.com/v1/databases/{notion_db_key}/query"
-    
-    payload = {
-        "filter": {
-            "property": "ID", 
-            "number": {
-                "equals": expense_id
-            }
-        }
-    }
-
+    payload = {"filter": {"property": "ID", "number": {"equals": expense_id}}}
     response = requests.post(url, headers=headers, json=payload)
-    data = response.json()
-    
-    results = data.get("results", [])
-    if results:
-        return results[0]["id"]
-    else:
-        print(f"Expense with ID '{expense_id}' not found")
-        return None
-    
-def delete_expense(expense_id: int):
-    """Deletes an expense from the DB"""
-    expense_page_id = get_expense_id(expense_id)
-    url = f"https://api.notion.com/v1/pages/{expense_page_id}"
-    payload = {"archived": True}
-    
-    response = requests.patch(url, headers=headers, json=payload)
-    
-    if response.status_code == 200:
-        return "Expense deleted correctly"
-    else:
-        return f"✗ Error {response.status_code}: {response.text}"
+    results = response.json().get("results", [])
+    return results[0]["id"] if results else None
+
 
 def update_expense(
-        expense_id: str, 
-        new_expense: str = None, 
-        new_amount: float = None, 
-        new_category: str = None
-):
-    """Updates the expense properties from an existed page"""
+    expense_id: int, 
+    new_expense: str = None, 
+    new_amount: float = None, 
+    new_category: CategoryType = None
+) -> str:
+    """
+    Updates an existing expense in the Notion database.
+
+    Args:
+        expense_id: The numeric ID of the expense to update.
+        new_expense: The new name of the expense, if the user wants to change it.
+        new_amount: The new cost of the expense, if the user wants to change it.
+        new_category: The new category, if the user wants to change it.
+
+    Returns:
+        A success or error message.
+    """
     expense_page_id = get_expense_id(expense_id)
+    if not expense_page_id:
+        return f"Error: Expense with ID {expense_id} not found."
+        
     url = f"https://api.notion.com/v1/pages/{expense_page_id}"
-    
     properties = {}
     
-    # Solo agregamos a las propiedades lo que el usuario quiere actualizar
-    if new_expense is not None:
+    if new_expense:
         properties["Expense"] = {"title": [{"text": {"content": new_expense}}]}
-    if new_amount is not None:
+    if new_amount:
         properties["Amount"] = {"number": new_amount}
-    if new_category is not None:
+    if new_category:
         properties["Category"] = {"select": {"name": new_category}}
         
     payload = {"properties": properties}
-    
     response = requests.patch(url, headers=headers, json=payload)
     
     if response.status_code == 200:
-        return "Expense updated correctly"
-    else:
-        return f"✗ Error {response.status_code}: {response.text}"
+        return f"Success: Expense {expense_id} updated."
+    return f"Error: {response.text}"
+
+
+def delete_expense(expense_id: int) -> str:
+    """
+    Deletes (archives) an expense from the Notion database.
+
+    Args:
+        expense_id: The numeric ID of the expense to delete.
+    
+    Returns:
+        A success or error message.
+    """
+    expense_page_id = get_expense_id(expense_id)
+    if not expense_page_id:
+        return f"Error: Expense with ID {expense_id} not found."
+        
+    url = f"https://api.notion.com/v1/pages/{expense_page_id}"
+    payload = {"archived": True}
+    response = requests.patch(url, headers=headers, json=payload)
+    
+    if response.status_code == 200:
+        return f"Success: Expense {expense_id} deleted."
+    return f"Error: {response.text}"
