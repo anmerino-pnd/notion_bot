@@ -59,7 +59,7 @@ def my_id_db(notion_integration_token: str) -> None:
         print("---")
 
 CATEGORIES = [
-    "Food, Dining & Snacks",
+    "Dining & Snacks",
     "Shopping",
     "Groceries",
     "Education",
@@ -155,9 +155,9 @@ def delete_expense(expense_id: int):
     response = requests.patch(url, headers=headers, json=payload)
     
     if response.status_code == 200:
-        print("Expense deleted correctly")
+        return "Expense deleted correctly"
     else:
-        print(f"✗ Error {response.status_code}: {response.text}")
+        return f"✗ Error {response.status_code}: {response.text}"
 
 def update_expense(
         expense_id: str, 
@@ -184,6 +184,6 @@ def update_expense(
     response = requests.patch(url, headers=headers, json=payload)
     
     if response.status_code == 200:
-        print("Expense updated correctly")
+        return "Expense updated correctly"
     else:
-        print(f"✗ Error {response.status_code}: {response.text}")
+        return f"✗ Error {response.status_code}: {response.text}"
