@@ -1,3 +1,6 @@
 .env
 notebooks/
 notion_bot.egg-info/
+
+datos/
+__pycache__/

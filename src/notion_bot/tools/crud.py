@@ -36,7 +36,9 @@ def add_expense(
     Args:
         expense: The name or short description of the expense (e.g., 'Coffee', 'Uber').
         amount: The total cost or amount of the expense. Must be a number.
-        category: The category that best fits the expense.
+        category: The category that best fits the expense. Must be exactly one of:
+            'Dining & Snacks', 'Shopping', 'Groceries', 'Education',
+            'Health & Wellness', 'Transport', 'Travel & Lodging', 'Housing & Utilities'.
         expense_date: The date of the expense in YYYY-MM-DD format. If not provided, it will use today's date.
     
     Returns:
