@@ -41,12 +41,15 @@ Delete) directly on a Notion database.
 notion_bot/
 ├── config/
 │   ├── credentials.py    # API keys & tokens
+|   └── paths.py	  # Paths of files 
 │   └── prompt.py         # System prompt for Noti
 ├── tools/
 │   └── crud.py           # add, update, delete expense functions
-├── datos/
-│   └── chat_history.json # Sliding window memory (last 10 pairs)
-└── agent.py              # Main answer() function & tool execution loop
+├── ollama/
+│   └── agent.py 	  # Main answer() function & tool execution loop
+└── main.py
+data/
+└── chat_history.json	  # Conversation's history
 ```
 
 ## How it works
@@ -59,7 +62,7 @@ Load history JSON  →  Apply sliding window (last 10 pairs)
 [system] + [history] + [query]  →  First call to the model
      ↓
    Tool calls?
-   /            Yes          No
+  Yes          No
   ↓             ↓
 Execute       Direct
 the tools     response ✅

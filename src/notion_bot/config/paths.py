@@ -9,7 +9,7 @@ def find_project_root(start_path: Path, marker_file: str = "pyproject.toml") -> 
 
 BASE_DIR = find_project_root(Path(__file__))
 
-DATA = BASE_DIR / "datos" 
+DATA = BASE_DIR / "data" 
 HISTORY_FILE = DATA / "chat_history.json"
 
 for path in [
