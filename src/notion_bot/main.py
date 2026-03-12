@@ -12,8 +12,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-
 @app.post("/webhook")
 async def telegram_webhook_handler(request: Request, background_tasks: BackgroundTasks):
     try:
