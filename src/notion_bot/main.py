@@ -16,12 +16,12 @@ app.add_middleware(
 async def telegram_webhook_handler(request: Request, background_tasks: BackgroundTasks):
     try:
         # Extract the JSON sent by Telegram
-        update = await request.json()
+        msg = await request.json()
         
         # Filter only text messages (ignore edits, events, etc.)
-        if "message" in update and "text" in update["message"]:
-            chat_id = update["message"]["chat"]["id"]
-            text = update["message"]["text"]
+        if "message" in msg and "text" in msg["message"]:
+            chat_id = msg["message"]["chat"]["id"]
+            text = msg["message"]["text"]
             
             # Delegate the heavy task to the background to respond quickly
             background_tasks.add_task(process_telegram_update, chat_id, text)
