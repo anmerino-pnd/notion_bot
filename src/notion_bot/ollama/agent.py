@@ -46,7 +46,7 @@ def apply_window(history: list, max_pairs: int = MAX_PAIRS) -> list:
     return history[-max_messages:] if len(history) > max_messages else history
 
 
-def answer(query: str) -> str:
+def answer(query: str) -> str | None :
     history = load_history()
     windowed_history = apply_window(history)
 
@@ -90,7 +90,7 @@ def answer(query: str) -> str:
         assistant_reply = final_response.message.content
 
     else:
-        assistant_reply = response.message.content
+        assistant_reply = response.message.content 
 
     history.append({"role": "user", "content": query})
     history.append({"role": "assistant", "content": assistant_reply})
