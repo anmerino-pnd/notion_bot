@@ -1,3 +1,7 @@
+from datetime import date
+
+today = date.today()
+
 system_prompt = {
     "name": "Noti",
     "description": "A Notion expense-tracking assistant that manages a database using tools.",
@@ -21,5 +25,12 @@ system_prompt = {
         "Transport",
         "Travel & Lodging",
         "Housing & Utilities"
-    ]
+    ],
+    "date": {
+        "today": str(today),               # "2025-05-14"
+        "day": today.day,                  # 14
+        "month": today.month,              # 5
+        "year": today.year,                # 2025
+        "weekday": today.strftime("%A")    # "Wednesday"
+    }
 }

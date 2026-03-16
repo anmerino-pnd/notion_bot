@@ -28,7 +28,7 @@ def add_expense(
     expense: str, 
     amount: float, 
     category: CategoryType, 
-    expense_date: str = None
+    expense_date: str = ""
 ) -> str:
     """
     Adds a new expense to the Notion database.
@@ -66,20 +66,23 @@ def add_expense(
     return f"Error: {response.text}"
 
 
-def get_expense_id(expense_id: int) -> str:
+def get_expense_id(expense_id: int) -> Optional[str]:
     """Helper function to find Notion's internal page ID based on our numeric ID."""
     url = f"https://api.notion.com/v1/databases/{notion_db_key}/query"
     payload = {"filter": {"property": "ID", "number": {"equals": expense_id}}}
     response = requests.post(url, headers=headers, json=payload)
     results = response.json().get("results", [])
-    return results[0]["id"] if results else None
+    if results:
+            return results[0]["id"]
+    else:
+        raise ValueError(f"Expense with ID {expense_id} not found.")
 
 
 def update_expense(
     expense_id: int, 
-    new_expense: str = None, 
-    new_amount: float = None, 
-    new_category: CategoryType = None
+    new_expense: str, 
+    new_amount: float, 
+    new_category: CategoryType
 ) -> str:
     """
     Updates an existing expense in the Notion database.
