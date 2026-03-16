@@ -4,3 +4,5 @@ notion_bot.egg-info/
 
 datos/
 __pycache__/
+
+data/
