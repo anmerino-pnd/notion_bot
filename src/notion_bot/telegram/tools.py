@@ -1,3 +1,4 @@
+import rich
 import requests
 from notion_bot.ollama.agent import answer
 from notion_bot.config.credentials import telegram_bot_token 
@@ -20,4 +21,6 @@ def process_telegram_update(chat_id: int, text: str):
         "chat_id": chat_id, 
         "text": bot_reply
     }
-    requests.post(url, json=payload)
+    telegram_response = requests.post(url, json=payload)
+    
+    rich.print(telegram_response)

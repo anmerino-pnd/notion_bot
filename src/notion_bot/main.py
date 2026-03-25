@@ -1,6 +1,7 @@
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request, BackgroundTasks
 from notion_bot.telegram.tools import process_telegram_update
+import rich
 
 app = FastAPI()
 
@@ -17,6 +18,7 @@ async def telegram_webhook_handler(request: Request, background_tasks: Backgroun
     try:
         # Extract the JSON sent by Telegram
         msg = await request.json()
+        rich.print(msg)
         
         # Filter only text messages (ignore edits, events, etc.)
         if "message" in msg and "text" in msg["message"]:

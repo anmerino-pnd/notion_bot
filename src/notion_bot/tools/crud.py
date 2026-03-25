@@ -1,3 +1,4 @@
+import rich
 import requests
 from datetime import date
 from typing import Literal, Optional
@@ -59,10 +60,13 @@ def add_expense(
         "properties": properties
     }
 
+    rich.print(payload)
     response = requests.post("https://api.notion.com/v1/pages", headers=headers, json=payload)
 
     if response.status_code == 200:
-        return f"Success: Expense '{expense}' added."
+        data = response.json()
+        generated_id = data["properties"]["ID"]["unique_id"]["number"]
+        return f"Success: Expense '{expense}' added with ID {generated_id}."
     return f"Error: {response.text}"
 
 
@@ -70,6 +74,9 @@ def get_expense_id(expense_id: int) -> Optional[str]:
     """Helper function to find Notion's internal page ID based on our numeric ID."""
     url = f"https://api.notion.com/v1/databases/{notion_db_key}/query"
     payload = {"filter": {"property": "ID", "number": {"equals": expense_id}}}
+
+    rich.print(payload)
+
     response = requests.post(url, headers=headers, json=payload)
     results = response.json().get("results", [])
     if results:
@@ -106,11 +113,13 @@ def update_expense(
     if new_expense:
         properties["Expense"] = {"title": [{"text": {"content": new_expense}}]}
     if new_amount:
-        properties["Amount"] = {"number": new_amount}
+        properties["Amount"] = {"number": float(new_amount)}
     if new_category:
         properties["Category"] = {"select": {"name": new_category}}
         
     payload = {"properties": properties}
+    rich.print(payload)
+
     response = requests.patch(url, headers=headers, json=payload)
     
     if response.status_code == 200:
@@ -134,8 +143,53 @@ def delete_expense(expense_id: int) -> str:
         
     url = f"https://api.notion.com/v1/pages/{expense_page_id}"
     payload = {"archived": True}
+    rich.print(payload)
+
     response = requests.patch(url, headers=headers, json=payload)
     
     if response.status_code == 200:
         return f"Success: Expense {expense_id} deleted."
     return f"Error: {response.text}"
+
+def search_expenses(target_date: str) -> str:
+    """
+    Searches the Notion database for expenses logged on a specific date.
+    
+    Args:
+        target_date: The date to search for in YYYY-MM-DD format.
+    
+    Returns:
+        A formatted string listing the found expenses and their IDs, or a message if none are found.
+    """
+
+    url = f"https://api.notion.com/v1/databases/{notion_db_key}/query"
+    payload = {
+        "filter": {
+            "property": "Date",
+            "date": {"equals": target_date}
+        }
+    }
+    rich.print(payload)
+
+    response = requests.post(url, headers=headers, json=payload)
+    
+    if response.status_code != 200:
+        return f"Error searching database: {response.text}"
+        
+    results = response.json().get("results", [])
+    
+    if not results:
+        return f"No expenses found for date {target_date}."
+        
+    found_items = []
+    for page in results:
+        props = page["properties"]
+        exp_id = props.get("ID", {}).get("unique_id", {}).get("number", "N/A")
+        title_arr = props.get("Expense", {}).get("title", [])
+        name = title_arr[0]["text"]["content"] if title_arr else "Unknown"
+        amount = props.get("Amount", {}).get("number", 0)
+        category = props.get("Category", {}).get("select", {}).get("name", "None")
+        
+        found_items.append(f"- [ID: {exp_id}] {name}: ${amount} ({category})")
+        
+    return "Found the following expenses:\n" + "\n".join(found_items)

@@ -33,6 +33,7 @@ Delete) directly on a Notion database.
    NOTION_INTEGRATION_TOKEN=""
    NOTION_PAGE_TOKEN=""
    NOTION_DB_KEY=""
+   TELEGRAM_BOT_TOKEN=""
    ```
 
 ## Project Structure
